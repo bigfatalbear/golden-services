@@ -1,0 +1,5 @@
+{
+  "_comment": "Lista de e-mails autorizados (SHA-256). Gere hashes em generate-hash.html",
+  "adminPassHash": "8442dea4bd552e10a9183eed68daccfb2e581af1053837909c673cc5b71b0170",
+  "authorized": []
+}

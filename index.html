@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#100d08">
+<title>Golden Services · Gestão de Serviços</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ===== PORTÃO DE ACESSO ===== -->
+<div id="gate" class="gate">
+  <div class="gate-box">
+    <div class="gate-logo">🏛️<h1>Golden Services</h1><p>Gestão de serviços premium</p></div>
+    <input id="gateEmail" type="email" placeholder="Seu e-mail autorizado" autocomplete="email">
+    <button id="gateBtn" class="btn gold">Entrar</button>
+    <button id="gateAdmin" class="link-btn">Acesso do admin →</button>
+    <p id="gateMsg" class="gate-msg"></p>
+  </div>
+</div>
+
+<!-- ===== ADMIN ===== -->
+<div id="adminModal" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Admin — Autorização de e-mails</h3>
+      <button id="adminClose" class="icon-btn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="row">
+        <input id="adminEmail" type="email" placeholder="e-mail a autorizar">
+        <button id="adminAdd" class="btn gold">+ Autorizar</button>
+      </div>
+      <div id="adminList" class="admin-list"></div>
+      <div class="row" style="margin-top:14px">
+        <button id="adminExport" class="btn">⬇️ Baixar authorized.json</button>
+      </div>
+      <p class="hint">Para valer em todos os aparelhos: baixe o arquivo, renomeie para authorized.json e commite no repo (gh CLI ou GitHub web). Este aparelho já fica liberado na hora.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== APP ===== -->
+<header class="topbar">
+  <button id="menuBtn" class="icon-btn">☰</button>
+  <h1><span class="gold">Golden</span> Services</h1>
+  <span id="userChip" class="user-chip"></span>
+  <button id="logout" class="icon-btn" title="Sair">⎋</button>
+</header>
+
+<nav id="sidebar" class="sidebar">
+  <button class="nav-item active" data-view="dash">📊 Painel</button>
+  <button class="nav-item" data-view="agenda">📅 Agenda</button>
+  <button class="nav-item" data-view="clients">👥 Clientes</button>
+  <button class="nav-item" data-view="quotes">🧾 Orçamentos</button>
+</nav>
+<div id="scrim" class="scrim"></div>
+
+<main id="main">
+  <!-- PAINEL -->
+  <section id="view-dash" class="view active">
+    <div class="kpi-row">
+      <div class="kpi"><small>Agendamentos hoje</small><b id="kpiToday">0</b></div>
+      <div class="kpi"><small>Receita do mês</small><b id="kpiMonth">R$ 0</b></div>
+      <div class="kpi"><small>Orçamentos pendentes</small><b id="kpiPending">0</b></div>
+      <div class="kpi"><small>Clientes</small><b id="kpiClients">0</b></div>
+    </div>
+    <h2>Próximos compromissos</h2>
+    <div id="upcoming" class="list"></div>
+  </section>
+
+  <!-- AGENDA -->
+  <section id="view-agenda" class="view">
+    <div class="panel">
+      <div class="row">
+        <input id="agWho" placeholder="Cliente" list="clientsDatalist">
+        <input id="agService" placeholder="Serviço (ex: pintura)">
+      </div>
+      <div class="row">
+        <input id="agDate" type="datetime-local">
+        <input id="agValue" type="number" placeholder="Valor R$" inputmode="decimal">
+      </div>
+      <button id="agAdd" class="btn gold">+ Agendar</button>
+    </div>
+    <datalist id="clientsDatalist"></datalist>
+    <h2>Compromissos</h2>
+    <div id="agendaList" class="list"></div>
+  </section>
+
+  <!-- CLIENTES -->
+  <section id="view-clients" class="view">
+    <div class="row">
+      <input id="clName" placeholder="Nome do cliente">
+      <input id="clPhone" placeholder="Telefone/WhatsApp">
+    </div>
+    <button id="clAdd" class="btn gold">+ Cliente</button>
+    <div id="clientsList" class="list" style="margin-top:14px"></div>
+  </section>
+
+  <!-- ORÇAMENTOS -->
+  <section id="view-quotes" class="view">
+    <div class="panel">
+      <div class="row">
+        <input id="qcWho" placeholder="Cliente" list="clientsDatalist">
+        <input id="qcService" placeholder="Serviço descrito">
+      </div>
+      <div class="row">
+        <input id="qcValue" type="number" placeholder="Valor R$" inputmode="decimal">
+        <select id="qcStatus">
+          <option value="pendente" selected>Pendente</option>
+          <option value="aceito">Aceito</option>
+          <option value="recusado">Recusado</option>
+        </select>
+      </div>
+      <button id="qcAdd" class="btn gold">+ Orçamento</button>
+      <a id="waLink" class="hint" target="_blank" href="#">📤 Enviar por WhatsApp (abre ao preencher cliente)</a>
+    </div>
+    <div id="quotesList" class="list"></div>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>

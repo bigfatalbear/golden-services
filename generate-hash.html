@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><title>Gerador de hash — Golden Services</title>
+<style>body{font-family:system-ui;background:#100d08;color:#f3ead8;display:flex;flex-direction:column;gap:12px;align-items:center;padding:40px}
+input{padding:10px;border-radius:8px;border:1px solid #241d10;background:#1a150c;color:#f3ead8}
+button{padding:10px 18px;border-radius:8px;border:none;background:#f5b942;font-weight:700;cursor:pointer}
+pre{background:#1a150c;padding:12px;border-radius:8px;word-break:break-all;max-width:90vw}</style></head>
+<body>
+<h3>🔐 Gerador de hash (e-mail ou senha master)</h3>
+<input id="v" placeholder="e-mail ou senha">
+<button onclick="go()">Gerar SHA-256</button>
+<pre id="out">—</pre>
+<p style="color:#9b8f7a;max-width:340px;text-align:center">Cole o hash na lista `authorized` do authorized.json, ou use a senha no gerador para trocar `adminPassHash`.</p>
+<script>
+async function go(){
+  const s=document.getElementById('v').value;
+  if(!s) return;
+  const h=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s.trim().toLowerCase())))]
+    .map(x=>x.toString(16).padStart(2,'0')).join('');
+  document.getElementById('out').textContent=h;
+}
+</script>
+</body>
+</html>
