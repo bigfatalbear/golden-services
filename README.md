@@ -10,8 +10,8 @@ Apenas **e-mails autorizados pelo proprietário** podem acessar:
 - **Admin:** no portão, toque em "Acesso do admin →" e digite a **senha master** para liberar/gerenciar e-mails no aparelho
 - Para autorizar em outros aparelhos: Admin → **⬇️ Baixar authorized.json** → commite no repo
 
-### Senha master inicial
-`golden-admin` — troque! Gere o hash da nova senha em `/generate-hash.html` e substitua o campo `adminPassHash` em `authorized.json`.
+### Senha master
+Definida pelo proprietário (hash no `authorized.json`). Para trocar: gere o hash da nova senha em `/generate-hash.html` e substitua o campo `adminPassHash`.
 
 ## ✨ Recursos
 - 📊 Painel com KPIs (agendamentos do dia, receita do mês, orçamentos pendentes, clientes)

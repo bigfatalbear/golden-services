@@ -118,7 +118,7 @@ $('#adminAdd').onclick = async () => {
   renderAdmin();
   toast('E-mail autorizado neste aparelho ✔');
 };
-const ADMIN_HASH = '8442dea4bd552e10a9183eed68daccfb2e581af1053837909c673cc5b71b0170';
+const ADMIN_HASH = 'f2ec49cc591ff570c23765bca3530620a563a93f59da1cfd57971cfee6c173c8';
 $('#adminExport').onclick = () => {
   const final = new Set([...localAuth, ...(window.__gsCfg?.authorized ?? [])].filter(Boolean));
   const blob = new Blob([JSON.stringify({
