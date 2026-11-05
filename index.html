@@ -75,9 +75,12 @@
       <div class="kpi"><small>Combustível (mês)</small><b id="kpiFuel">R$ 0</b></div>
       <div class="kpi"><small>Consumo médio km/L</small><b id="kpiKmL">—</b></div>
       <div class="kpi"><small>Disponível p/ investir</small><b id="kpiBudget">R$ 0</b></div>
+      <div class="kpi"><small>Manutenções pendentes</small><b id="kpiMaint">0</b></div>
     </div>
     <h2>Próximos compromissos</h2>
     <div id="upcoming" class="list"></div>
+    <h2>🔧 Manutenções da frota</h2>
+    <div id="maintAlerts" class="list"></div>
     <h2>🚗 Últimos abastecimentos</h2>
     <div id="lastFuel" class="list"></div>
   </section>
@@ -117,6 +120,18 @@
       <button id="fufAdd" class="btn gold">+ Registrar abastecimento</button>
       <p class="hint" id="fufTip"></p>
     </div>
+    <h2>🔧 Lembretes de manutenção</h2>
+    <div class="panel">
+      <div class="row">
+        <select id="mtVeh" class="veh-sel"></select>
+      </div>
+      <div class="row">
+        <input id="mtName" placeholder="Ex: Troca de óleo">
+        <input id="mtEvery" type="number" placeholder="A cada X km" inputmode="numeric">
+      </div>
+      <button id="mtAdd" class="btn gold">+ Criar lembrete</button>
+    </div>
+    <div id="maintList" class="list"></div>
     <h2>Minha frota</h2>
     <div id="vehiclesList" class="list"></div>
   </section>

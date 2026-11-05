@@ -10,6 +10,7 @@ const state = {
   quotes: LS.get('gs_quotes', []),
   vehicles: LS.get('gs_vehicles', []),
   fuel: LS.get('gs_fuel', []),
+  maint: LS.get('gs_maint', []),
 };
 const VALID_DEVICES = LS.get('gs_valid', {}); // {emailHash: true} por aparelho
 
@@ -303,6 +304,63 @@ function renderVehicles() {
   });
 }
 
+/* ---------- lembretes de manutenção ---------- */
+function odometerOf(vid) {
+  const lastFuel = state.fuel.filter(f => f.v === vid).sort((a, b) => b.km - a.km)[0];
+  const v = state.vehicles.find(x => x.id === vid);
+  return Math.max(lastFuel?.km || 0, v?.km || 0);
+}
+
+function maintStatus(m) {
+  const km = odometerOf(m.v);
+  const since = km - (m.lastKm || m.baseKm || km);
+  const pct = m.every ? since / m.every : 0;
+  if (!m.lastKm && !m.baseKm) return { st: 'novo', txt: 'sem registro — toque em OK após a 1ª troca' };
+  if (pct >= 1) return { st: 'vencida', txt: `VENCIDA há ${Math.round(since - m.every)} km` };
+  if (pct >= 0.8) return { st: 'próxima', txt: `faltam ${m.every - Math.round(since)} km` };
+  return { st: 'ok', txt: `faltam ${m.every - Math.round(since)} km` };
+}
+
+$('#mtAdd').onclick = () => {
+  const vid = $('#mtVeh').value, name = $('#mtName').value.trim(), every = +$('#mtEvery').value;
+  if (!vid || !name || !every) return toast('Veículo, serviço e intervalo obrigatórios');
+  state.maint.push({ id: Date.now() + '', v: vid, name, every, baseKm: odometerOf(vid) });
+  LS.set('gs_maint', state.maint);
+  $('#mtName').value = $('#mtEvery').value = '';
+  renderMaint(); renderDashboard(); toast('Lembrete criado 🔧');
+};
+
+function renderMaint() {
+  fillVehSelect2();
+  $('#maintList').innerHTML = state.maint.length ? state.maint.map(m => {
+    const veh = state.vehicles.find(v => v.id === m.v);
+    const s = maintStatus(m);
+    const cls = { vencida: 'r', próxima: 'p', proxima: 'p', ok: 'a', novo: 'p' }[s.st] || 'p';
+    return `<div class="item"><div class="info">
+      <h3>${veh?.name || '?'} — ${m.name} <span class="pill ${cls}">${s.st}</span></h3>
+      <p>a cada ${m.every.toLocaleString('pt-BR')} km · odômetro ${odometerOf(m.v).toLocaleString('pt-BR')} km · ${s.txt}</p>
+    </div>
+    <button class="btn done" data-ok="${m.id}">OK ✓</button>
+    <button class="btn del" data-del-m="${m.id}">✕</button></div>`;
+  }).join('') : '<p class="empty">Nenhum lembrete. Ex: óleo a cada 5.000 km.</p>';
+  $('#maintList').querySelectorAll('[data-ok]').forEach(b => b.onclick = () => {
+    const m = state.maint.find(x => x.id === b.dataset.ok);
+    m.lastKm = odometerOf(m.v); m.baseKm = m.lastKm;
+    LS.set('gs_maint', state.maint);
+    renderMaint(); renderDashboard(); toast(m.name + ' registrada em ' + m.lastKm.toLocaleString('pt-BR') + ' km ✓');
+  });
+  $('#maintList').querySelectorAll('[data-del-m]').forEach(b => b.onclick = () => {
+    state.maint = state.maint.filter(x => x.id !== b.dataset.delM);
+    LS.set('gs_maint', state.maint);
+    renderMaint(); renderDashboard(); toast('Lembrete removido');
+  });
+}
+function fillVehSelect2() {
+  $('#mtVeh').innerHTML = state.vehicles.length
+    ? state.vehicles.map(v => `<option value="${v.id}">${v.name}</option>`).join('')
+    : '<option value="">— cadastre um veículo —</option>';
+}
+
 function renderDashboard() {
   if (!CAN_IN) return;
   const today = new Date().toISOString().slice(0, 10);
@@ -321,6 +379,25 @@ function renderDashboard() {
   const receita = state.jobs.filter(j => (j.dt || '').startsWith(m)).reduce((s, j) => s + (+j.v || 0), 0);
   const custoComb = monthFuel.reduce((s, f) => s + f.val, 0);
   $('#kpiBudget').textContent = fmt(Math.max(0, receita - custoComb));
+  $('#kpiMaint').textContent = state.maint.filter(m => ['vencida', 'proxima', 'próxima'].includes(maintStatus(m).st)).length;
+
+  $('#vehiclesList').innerHTML = ''; // preenchido em renderVehicles (chamado junto)
+  const alerts = state.maint.map(m => {
+    const veh = state.vehicles.find(v => v.id === m.v);
+    const s = maintStatus(m);
+    if (s.st === 'ok' || s.st === 'novo') return null;
+    return itemHTML({ title: `${veh?.name || '?'} — ${m.name}`,
+      sub: `<span class="pill ${s.st === 'vencida' ? 'r' : 'p'}">${s.st}</span> ${s.txt}`,
+      val: '<button class="btn done" data-ok-dash="' + m.id + '">OK ✓</button>' });
+  }).filter(Boolean);
+  $('#maintAlerts').innerHTML = alerts.length ? alerts.join('')
+    : '<p class="empty">Tudo em dia 🔧✨</p>';
+  $('#maintAlerts').querySelectorAll('[data-ok-dash]').forEach(b => b.onclick = () => {
+    const m = state.maint.find(x => x.id === b.dataset.okDash);
+    m.lastKm = odometerOf(m.v); m.baseKm = m.lastKm;
+    LS.set('gs_maint', state.maint);
+    renderDashboard(); renderMaint(); toast(m.name + ' registrada ✓');
+  });
 
   const up = [...state.jobs].sort((a, b) => (a.dt || '') > (b.dt || '') ? 1 : -1).slice(0, 5);
   $('#upcoming').innerHTML = up.length
@@ -426,7 +503,7 @@ function updateWa() {
 
 function renderAll() {
   if (!CAN_IN) return;
-  renderDashboard(); renderAgenda(); renderClients(); renderQuotes(); fillDatalist(); updateWa(); renderVehicles();
+  renderDashboard(); renderAgenda(); renderClients(); renderQuotes(); fillDatalist(); updateWa(); renderVehicles(); renderMaint();
 }
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
