@@ -147,8 +147,18 @@
     </div>
     <button id="clAdd" class="btn gold">+ Cliente</button>
     <div id="clientsList" class="list" style="margin-top:14px"></div>
-  </section>
 
+    <h2>💬 Atendimento rápido</h2>
+    <p class="hint">Toque em 💬 num cliente para mandar mensagem. Ou use um modelo para contato em massa:</p>
+    <div class="row wa-templates">
+      <button class="btn ghost small" data-tpl="lembrete">📅 Lembrete</button>
+      <button class="btn ghost small" data-tpl="orcamento">🧾 Orçamento pendente</button>
+      <button class="btn ghost small" data-tpl="agradecimento">🙏 Agradecimento</button>
+      <button class="btn ghost small" data-tpl="promocional">🌟 Promoção</button>
+    </div>
+    <div id="waComposer"></div>
+  </section>
+  </section>
   <!-- ORÇAMENTOS -->
   <section id="view-quotes" class="view">
     <div class="panel">
@@ -170,6 +180,29 @@
     <div id="quotesList" class="list"></div>
   </section>
 </main>
+
+<!-- COMPOSITOR WHATSAPP -->
+<div id="waModal" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>💬 Mensagem WhatsApp</h3>
+      <button id="waClose" class="icon-btn">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="row">
+        <select id="waTpl">
+          <option value="lembrete">📅 Lembrete de agendamento</option>
+          <option value="orcamento">🧾 Orçamento pendente</option>
+          <option value="agradecimento">🙏 Agradecimento</option>
+          <option value="promocional">🌟 Promoção</option>
+          <option value="livre">✍️ Mensagem livre</option>
+        </select>
+      </div>
+      <textarea id="waMsg" rows="6" class="wa-textarea"></textarea>
+      <button id="waSend" class="btn gold">📤 Abrir WhatsApp</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast" class="toast"></div>
 <script src="app.js"></script>

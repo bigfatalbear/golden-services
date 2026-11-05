@@ -156,6 +156,74 @@ $('#menuBtn').onclick = () => { $('#sidebar').classList.add('open'); $('#scrim')
 $('#scrim').onclick = closeSb;
 function closeSb() { $('#sidebar').classList.remove('open'); $('#scrim').classList.remove('show'); }
 
+/* ======================= ATENDIMENTO WHATSAPP ======================= */
+const WA_TPLS = {
+  lembrete: c => {
+    const prox = state.jobs.filter(j => j.who === c.name && new Date(j.dt) >= new Date()).sort((a, b) => a.dt > b.dt ? 1 : -1)[0];
+    const quando = prox ? new Date(prox.dt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : 'sua próxima visita';
+    return `Olá ${c.name}! 🏛️\nPassando para confirmar seu agendamento em ${quando}.\nPrecisa ajustar algo? Estamos à disposição!\n— Golden Services`;
+  },
+  orcamento: c => {
+    const q = state.quotes.filter(x => x.who === c.name && x.st === 'pendente').sort((a, b) => b.id - a.id)[0];
+    return `Olá ${c.name}! 🏛️\nDeixamos registrado o orçamento de *${q?.svc || 'seu serviço'}* no valor de ${fmt(q?.v)}.\nPodemos seguir com o serviço? ✅\n— Golden Services`;
+  },
+  agradecimento: c => `Olá ${c.name}! 🙏\nObrigado pela confiança no trabalho. Qualquer necessidade, chama a gente!\n— Golden Services`,
+  promocional: c => `Olá ${c.name}! 🌟\nTemos condições especiais neste mês para serviços agendados.\nQuer reservar uma vaga?\n— Golden Services`,
+  livre: c => LS.get('gs_wa_free', `Olá ${c.name}! 🏛️\n`) || `Olá ${c.name}! 🏛️\n`,
+};
+
+let waClient = null;
+function openWa(client) {
+  waClient = client;
+  const sel = $('#waTpl');
+  sel.value = 'lembrete';
+  $('#waMsg').value = WA_TPLS.lembrete(client);
+  $('#waModal').classList.remove('hidden');
+}
+$('#waClose').onclick = () => $('#waModal').classList.add('hidden');
+$('#waTpl').addEventListener('change', () => {
+  const t = $('#waTpl').value;
+  if (t === 'livre') {
+    $('#waMsg').value = LS.get('gs_wa_free', `Olá ${waClient?.name || ''}! 🏛️\n`) || `Olá ${waClient?.name}! 🏛️\n`;
+  } else {
+    $('#waMsg').value = WA_TPLS[t](waClient);
+  }
+});
+$('#waMsg').addEventListener('input', () => {
+  if ($('#waTpl').value === 'livre') LS.set('gs_wa_free', $('#waMsg').value);
+});
+$('#waSend').onclick = () => {
+  const phone = (waClient?.phone || '').replace(/\D/g, '');
+  const txt = $('#waMsg').value;
+  const url = `https://wa.me/${phone ? '55' + phone : ''}?text=${encodeURIComponent(txt)}`;
+  window.open(url, '_blank');
+  logWa(txt);
+  $('#waModal').classList.add('hidden');
+};
+function logWa(txt) {
+  const hist = LS.get('gs_wa_log', []);
+  hist.unshift({ c: waClient?.name || '', t: txt, dt: Date.now() });
+  LS.set('gs_wa_log', hist.slice(0, 30));
+  const tpl = $('#waTpl').value;
+  if (tpl && tpl !== 'livre') {
+    const done = LS.get('gs_wa_done_' + tpl, []);
+    if (!done.includes(waClient?.name)) LS.set('gs_wa_done_' + tpl, [...done, waClient?.name]);
+  }
+}
+
+/* contato direto por modelo (botões de contato rápido) */
+document.querySelectorAll('[data-tpl]').forEach(b => b.onclick = () => {
+  if (!state.clients.length) return toast('Cadastre um cliente primeiro');
+  const tpl = b.dataset.tpl;
+  const done = LS.get('gs_wa_done_' + tpl, []);
+  const next = state.clients.find(c => !done.includes(c.name));
+  if (!next) return toast('Todos já receberam este modelo ✔');
+  waClient = next;
+  $('#waTpl').value = tpl;
+  $('#waMsg').value = WA_TPLS[tpl](next);
+  $('#waModal').classList.remove('hidden');
+});
+
 /* ======================= NÚCLEO ======================= */
 function itemHTML(i, extra = '') {
   return `<div class="item"><div class="info"><h3>${i.title}</h3>${i.sub ? '<p>' + i.sub + '</p>' : ''}</div>${extra}<div>${i.val || ''}</div></div>`;
@@ -293,10 +361,18 @@ $('#agAdd').onclick = () => {
 };
 
 function renderClients() {
-  $('#clientsList').innerHTML = state.clients.length ? state.clients.map(c =>
-    `<div class="item"><div class="info"><h3>${c.name}</h3><p>${c.phone || ''}</p></div>
-    <button class="btn del" data-del-c="${c.id}">✕</button></div>`).join('')
+  const waLog = LS.get('gs_wa_log', []);
+  $('#clientsList').innerHTML = state.clients.length ? state.clients.map(c => {
+    const lastWa = waLog.find(w => w.c === c.name);
+    return `<div class="item"><div class="info"><h3>${c.name}</h3><p>${c.phone || 'sem telefone'}
+      ${lastWa ? `<br>💬 última mensagem ${new Date(lastWa.dt).toLocaleDateString('pt-BR')}` : ''}</p></div>
+    <button class="btn ghost wa-btn" data-wa="${c.id}" title="WhatsApp">💬</button>
+    <button class="btn del" data-del-c="${c.id}">✕</button></div>`;
+  }).join('')
     : '<p class="empty">Sem clientes.</p>';
+  $('#clientsList').querySelectorAll('[data-wa]').forEach(b => b.onclick = () => {
+    openWa(state.clients.find(x => x.id === b.dataset.wa));
+  });
   $('#clientsList').querySelectorAll('[data-del-c]').forEach(b => b.onclick = () => {
     state.clients = state.clients.filter(x => x.id !== b.dataset.delC);
     LS.set('gs_clients', state.clients); renderClients(); fillDatalist(); renderDashboard();
