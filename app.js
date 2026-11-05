@@ -8,6 +8,8 @@ const state = {
   clients: LS.get('gs_clients', []),
   jobs: LS.get('gs_jobs', []),
   quotes: LS.get('gs_quotes', []),
+  vehicles: LS.get('gs_vehicles', []),
+  fuel: LS.get('gs_fuel', []),
 };
 const VALID_DEVICES = LS.get('gs_valid', {}); // {emailHash: true} por aparelho
 
@@ -159,20 +161,113 @@ function itemHTML(i, extra = '') {
   return `<div class="item"><div class="info"><h3>${i.title}</h3>${i.sub ? '<p>' + i.sub + '</p>' : ''}</div>${extra}<div>${i.val || ''}</div></div>`;
 }
 
+/* ======================= VEÍCULOS / FROTA ======================= */
+$('#vhAdd').onclick = () => {
+  const name = $('#vhName').value.trim(), model = $('#vhModel').value.trim();
+  const km = +$('#vhKm').value || 0, fuel = $('#vhFuel').value;
+  if (!name) return toast('Informe o apelido do veículo');
+  state.vehicles.push({ id: Date.now() + '', name, model, km, fuel });
+  LS.set('gs_vehicles', state.vehicles);
+  ['#vhName', '#vhModel', '#vhKm'].forEach(s => $(s).value = '');
+  renderVehicles(); renderDashboard(); toast('Veículo cadastrado 🚗');
+};
+
+function fillVehSelect() {
+  $('#fufVeh').innerHTML = state.vehicles.length
+    ? state.vehicles.map(v => `<option value="${v.id}">${v.name}${v.model ? ' · ' + v.model : ''}</option>`).join('')
+    : '<option value="">— cadastre um veículo acima —</option>';
+}
+
+$('#fufVal').addEventListener('input', () => {
+  $('#fufPrice').value = l && v ? (v / l).toFixed(2) : '';
+});
+$('#fufAdd').onclick = () => {
+  const vid = $('#fufVeh').value, km = +$('#fufKm').value, l = +$('#fufL').value, v = +$('#fufVal').value;
+  if (!vid) return toast('Cadastre um veículo primeiro');
+  if (!km || !l || !v) return toast('KM, litros e valor obrigatórios');
+  const prev = state.fuel.filter(f => f.v === vid).sort((a, b) => b.km - a.km)[0];
+  const dist = prev ? km - prev.km : 0;
+  if (prev && dist <= 0) return toast('KM menor/igual ao último registro (' + prev.km + ')');
+  state.fuel.push({ id: Date.now() + '', v: vid, km, l, val: v, dt: Date.now() });
+  LS.set('gs_fuel', state.fuel);
+  $('#fufKm').value = $('#fufL').value = $('#fufVal').value = $('#fufPrice').value = '';
+  renderVehicles(); renderDashboard();
+  toast(prev ? `Consumo: ${(dist / l).toFixed(2)} km/L` : 'Abastecimento registrado ⛽');
+};
+
+function kmL(vid) {
+  const recs = state.fuel.filter(f => f.v === vid).sort((a, b) => a.km - b.km);
+  const rows = recs.map((f, i) => {
+    if (i === 0) return null;
+    const dist = f.km - recs[i - 1].km;
+    return { kmL: dist / f.l, ckm: f.val / f.km === Infinity || !f.km ? 0 : f.val / f.km, dist };
+  }).filter(Boolean);
+  return {
+    avg: rows.length ? rows.reduce((s, r) => s + r.kmL, 0) / rows.length : 0,
+    last: rows.length ? rows[rows.length - 1] : 0,
+    rows,
+  };
+}
+
+function renderVehicles() {
+  fillVehSelect();
+  $('#vehiclesList').innerHTML = state.vehicles.length ? state.vehicles.map(v => {
+    const c = kmL(v.id);
+    const recs = state.fuel.filter(f => f.v === v.id).sort((a, b) => b.km - a.km).slice(0, 3);
+    return `<div class="item" style="flex-wrap:wrap">
+      <div class="info">
+        <h3>🚗 ${v.name} <span class="pill p">${v.fuel}</span></h3>
+        <p>${v.model || ''} · Odômetro: ${v.km.toLocaleString('pt-BR')} km</p>
+        <p>Consumo médio: <b style="color:var(--gold)">${c.avg ? c.avg.toFixed(2) + ' km/L' : '—'}</b>
+        · Custo/km: ${c.last && c.last.ckm ? fmt(c.last.ckm) : '—'}</p>
+        ${recs.map(f => `<p style="font-size:.7rem">${new Date(f.dt).toLocaleDateString('pt-BR')} — ${f.km.toLocaleString('pt-BR')} km · ${f.l}L · ${fmt(f.val)}</p>`).join('')}
+      </div>
+      <button class="btn del" data-del-v="${v.id}">✕</button>
+    </div>`;
+  }).join('') : '<p class="empty">Nenhum veículo.</p>';
+  $('#vehiclesList').querySelectorAll('[data-del-v]').forEach(b => b.onclick = () => {
+    if (!confirm('Remover veículo e seus abastecimentos?')) return;
+    const id = b.dataset.delV;
+    state.vehicles = state.vehicles.filter(x => x.id !== id);
+    state.fuel = state.fuel.filter(x => x.v !== id);
+    LS.set('gs_vehicles', state.vehicles); LS.set('gs_fuel', state.fuel);
+    renderVehicles(); renderDashboard(); toast('Removido');
+  });
+}
+
 function renderDashboard() {
+  if (!CAN_IN) return;
   const today = new Date().toISOString().slice(0, 10);
-  const kpiToday = state.jobs.filter(j => j.dt && j.dt.startsWith(today));
   const m = new Date().toISOString().slice(0, 7);
-  $('#kpiToday').textContent = kpiToday.length;
+  $('#kpiToday').textContent = state.jobs.filter(j => (j.dt || '').startsWith(today)).length;
   $('#kpiMonth').textContent = fmt(state.jobs.filter(j => (j.dt || '').startsWith(m)).reduce((s, j) => s + (+j.v || 0), 0));
   $('#kpiPending').textContent = state.quotes.filter(q => q.st === 'pendente').length;
   $('#kpiClients').textContent = state.clients.length;
+
+  // frota
+  $('#kpiFleet').textContent = state.vehicles.length;
+  const monthFuel = state.fuel.filter(f => new Date(f.dt).toISOString().slice(0, 7) === m);
+  $('#kpiFuel').textContent = fmt(monthFuel.reduce((s, f) => s + f.val, 0));
+  const avgs = state.vehicles.map(v => kmL(v.id).avg).filter(Boolean);
+  $('#kpiKmL').textContent = avgs.length ? (avgs.reduce((s, a) => s + a, 0) / avgs.length).toFixed(2) : '—';
+  const receita = state.jobs.filter(j => (j.dt || '').startsWith(m)).reduce((s, j) => s + (+j.v || 0), 0);
+  const custoComb = monthFuel.reduce((s, f) => s + f.val, 0);
+  $('#kpiBudget').textContent = fmt(Math.max(0, receita - custoComb));
+
   const up = [...state.jobs].sort((a, b) => (a.dt || '') > (b.dt || '') ? 1 : -1).slice(0, 5);
   $('#upcoming').innerHTML = up.length
     ? up.map(j => itemHTML({ title: `${j.who} — ${j.svc}`,
         sub: new Date(j.dt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
         val: `<span class="val">${fmt(j.v)}</span>` })).join('')
     : '<p class="empty">Nada agendado. Vá em 📅 Agenda.</p>';
+
+  const lastF = [...state.fuel].sort((a, b) => b.dt - a.dt).slice(0, 4);
+  $('#lastFuel').innerHTML = lastF.length ? lastF.map(f => {
+    const v = state.vehicles.find(v => v.id === f.v);
+    return itemHTML({ title: (v?.name || 'Veículo') + ' — ' + f.l + 'L',
+      sub: new Date(f.dt).toLocaleDateString('pt-BR') + ' · ' + f.km.toLocaleString('pt-BR') + ' km',
+      val: `<span class="val">${fmt(f.val)}</span>` });
+  }).join('') : '<p class="empty">Sem abastecimentos registrados.</p>';
 }
 
 function renderAgenda() {
@@ -255,7 +350,7 @@ function updateWa() {
 
 function renderAll() {
   if (!CAN_IN) return;
-  renderDashboard(); renderAgenda(); renderClients(); renderQuotes(); fillDatalist(); updateWa();
+  renderDashboard(); renderAgenda(); renderClients(); renderQuotes(); fillDatalist(); updateWa(); renderVehicles();
 }
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');

@@ -55,6 +55,7 @@
 <nav id="sidebar" class="sidebar">
   <button class="nav-item active" data-view="dash">📊 Painel</button>
   <button class="nav-item" data-view="agenda">📅 Agenda</button>
+  <button class="nav-item" data-view="vehicles">🚗 Veículos</button>
   <button class="nav-item" data-view="clients">👥 Clientes</button>
   <button class="nav-item" data-view="quotes">🧾 Orçamentos</button>
 </nav>
@@ -69,8 +70,55 @@
       <div class="kpi"><small>Orçamentos pendentes</small><b id="kpiPending">0</b></div>
       <div class="kpi"><small>Clientes</small><b id="kpiClients">0</b></div>
     </div>
+    <div class="kpi-row">
+      <div class="kpi"><small>Veículos na frota</small><b id="kpiFleet">0</b></div>
+      <div class="kpi"><small>Combustível (mês)</small><b id="kpiFuel">R$ 0</b></div>
+      <div class="kpi"><small>Consumo médio km/L</small><b id="kpiKmL">—</b></div>
+      <div class="kpi"><small>Disponível p/ investir</small><b id="kpiBudget">R$ 0</b></div>
+    </div>
     <h2>Próximos compromissos</h2>
     <div id="upcoming" class="list"></div>
+    <h2>🚗 Últimos abastecimentos</h2>
+    <div id="lastFuel" class="list"></div>
+  </section>
+
+  <!-- VEÍCULOS -->
+  <section id="view-vehicles" class="view">
+    <div class="panel">
+      <div class="row">
+        <input id="vhName" placeholder="Apelido do veículo (ex: Fiorino)">
+        <input id="vhModel" placeholder="Modelo/placa">
+      </div>
+      <div class="row">
+        <input id="vhKm" type="number" placeholder="KM atual" inputmode="numeric">
+        <select id="vhFuel">
+          <option value="Gasolina">Gasolina</option>
+          <option value="Etanol">Etanol</option>
+          <option value="Diesel">Diesel</option>
+          <option value="GNV">GNV</option>
+          <option value="Elétrico">Elétrico</option>
+        </select>
+      </div>
+      <button id="vhAdd" class="btn gold">+ Cadastrar veículo</button>
+    </div>
+    <h2>Abastecimento / consumo</h2>
+    <div class="panel">
+      <div class="row">
+        <select id="fufVeh" class="veh-sel"></select>
+      </div>
+      <div class="row">
+        <input id="fufKm" type="number" placeholder="KM do odômetro" inputmode="numeric">
+        <input id="fufL" type="number" placeholder="Litros" step="0.01" inputmode="decimal">
+      </div>
+      <div class="row">
+        <input id="fufVal" type="number" placeholder="Valor pago R$" step="0.01" inputmode="decimal">
+        <input id="fufPrice" type="number" placeholder="Preço/L (auto)" step="0.01" inputmode="decimal" readonly>
+      </div>
+      <button id="fufAdd" class="btn gold">+ Registrar abastecimento</button>
+      <p class="hint" id="fufTip"></p>
+    </div>
+    <h2>Minha frota</h2>
+    <div id="vehiclesList" class="list"></div>
   </section>
 
   <!-- AGENDA -->
