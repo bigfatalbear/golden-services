@@ -1,4 +1,4 @@
-const CACHE = 'golden-v1';
+const CACHE = 'golden-v2';
 const ASSETS = ['./', './index.html', './styles.css', './app.js', './manifest.json',
   './icon-192.png', './icon-512.png', './authorized.json', './generate-hash.html'];
 

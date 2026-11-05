@@ -63,11 +63,16 @@ function enter(hash = '', email = '') {
 }
 
 $('#gateBtn').onclick = async () => {
-  const email = $('#gateEmail').value.trim().toLowerCase();
+  const email = $('#gateEmail').value.trim().toLowerCase().replace(/\s+/g, '');
   if (!email) return gateMsg('Digite seu e-mail.');
+  const cfg = window.__gsCfg;
+  if (!cfg) {
+    gateMsg('A lista de autorização não carregou. Recarregue a página (feito isso, tente de novo).');
+    return;
+  }
   const res = await tryGate(email);
   if (res.ok) return enter(res.hash, res.email);
-  gateMsg('E-mail não autorizado. Solicite acesso ao proprietário.');
+  gateMsg('Recebido: "' + email + '" — este e-mail não está na lista autorizada (lista carregada com ' + (cfg.authorized?.length ?? 0) + ' e-mails). Confira a grafia ou entre como admin.');
 };
 $('#gateEmail').addEventListener('keydown', e => { if (e.key === 'Enter') $('#gateBtn').click(); });
 $('#gateAdmin').onclick = () => openAdminGate();
